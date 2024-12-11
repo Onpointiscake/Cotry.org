@@ -1,6 +1,22 @@
 const Poll = require('../models/poll');
 const express = require('express');
 const router = express.Router();
+const authMiddleware = require('../../authMiddleware')
+
+// Get top 3 most voted polls
+router.get('/top-polls', async (req, res) => {
+    const limit = 3; // Number of polls to return (top 3)
+
+    try {
+        const polls = await Poll.find()
+            .sort({ vote_count: -1 })  // Sort by vote_count (most votes first)
+            .limit(limit);             // Limit results to 3 polls
+
+        res.status(200).json(polls);  // Return the top 3 polls
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
 
 // Get a single poll [Verified - Working!]
 router.get('/:id', async (req, res) => {
@@ -12,7 +28,7 @@ router.get('/:id', async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
-
+/*
 // Create a poll [Verified - Working!]
 router.post('/', async (req, res) => {
     try {
@@ -23,6 +39,18 @@ router.post('/', async (req, res) => {
         res.status(400).json({ error: err.message });
     }
 });
+*/
+// Create a poll authenticated [...]
+router.post('/', authMiddleware, async (req, res) => {
+    try {
+        const poll = new Poll({ ...req.body, author: req.user.id }); 
+        await poll.save();
+        res.status(201).json(poll);
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
 
 // Vote on a poll [Verified - Working!]
 router.put('/:id/vote', async (req, res) => {
@@ -53,22 +81,6 @@ router.put('/:id/vote', async (req, res) => {
     }
 });
 
-// Get polls sorted by number of votes [Verified - Working!]
-router.get('/top-polls', async (req, res) => {
-    const limit = parseInt(req.query.limit) || 3; // Number of polls per page
-    const page = parseInt(req.query.page) || 1;  // Current page number
-
-    try {
-        const polls = await Poll.find()
-            .sort({ vote_count: -1 }) // Sort polls by vote_count in descending order
-            .skip((page - 1) * limit) // Skip polls from previous pages
-            .limit(limit);           // Limit the number of polls to return
-
-        res.status(200).json(polls);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
 
 // Add a comment to a poll [Verified - Working!]
 router.post('/:id/comments', async (req, res) => {

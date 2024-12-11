@@ -9,8 +9,8 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
+ // Conexión a MongoDB (excepto si estamos en el entorno de test)
 if (process.env.NODE_ENV !== 'test') {
-    // Conexión a MongoDB solo si no estamos en el entorno de test
     mongoose.connect(process.env.MONGO_URI)
         .then(() => console.log("Connected to MongoDB!"))
         .catch((err) => {
@@ -27,4 +27,4 @@ if (process.env.NODE_ENV !== 'test') {
     });
 }
 
-module.exports = app; // Exporta la app para usarla en las pruebas
+module.exports = app;

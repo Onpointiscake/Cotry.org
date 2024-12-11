@@ -21,6 +21,12 @@ const PollSchema = new mongoose.Schema({
             author: { type: String, default: 'Anonymous' }, 
         },
     ],
+     // Aquí agregamos la referencia al autor:
+    author: { 
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: 'User', 
+        required: true 
+    },
     created_at: { type: Date, default: Date.now }
 });
 
