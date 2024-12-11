@@ -28,19 +28,8 @@ router.get('/:id', async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
-/*
-// Create a poll [Verified - Working!]
-router.post('/', async (req, res) => {
-    try {
-        const poll = new Poll(req.body);
-        await poll.save();
-        res.status(201).json(poll);
-    } catch (err) {
-        res.status(400).json({ error: err.message });
-    }
-});
-*/
-// Create a poll authenticated [...]
+
+// Create a poll [Verified]
 router.post('/', authMiddleware, async (req, res) => {
     try {
         const poll = new Poll({ ...req.body, author: req.user.id }); 
@@ -52,40 +41,34 @@ router.post('/', authMiddleware, async (req, res) => {
 });
 
 
-// Vote on a poll [Verified - Working!]
-router.put('/:id/vote', async (req, res) => {
+router.put('/:id/vote', authMiddleware, async (req, res) => {
     const pollId = req.params.id;
-    const { option } = req.body; 
+    const { option } = req.body;
 
     try {
         const poll = await Poll.findById(pollId);
-
         if (!poll) {
             return res.status(404).json({ error: 'Poll not found' });
         }
 
         const optionIndex = poll.options.findIndex(opt => opt.option === option);
-
         if (optionIndex === -1) {
             return res.status(400).json({ error: 'Invalid option' });
         }
 
         poll.options[optionIndex].votes += 1;
-        poll.vote_count += 1; // Increment total vote count
+        poll.vote_count += 1; // Incrementar el conteo total de votos
 
         await poll.save();
-
         res.status(200).json({ message: 'Vote registered successfully', poll });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-
-// Add a comment to a poll [Verified - Working!]
-router.post('/:id/comments', async (req, res) => {
+router.post('/:id/comments', authMiddleware, async (req, res) => {
     const pollId = req.params.id;
-    const { text, author = 'Anonymous' } = req.body; // Default author to "Anonymous" if not provided
+    const { text } = req.body;
 
     if (!text || text.trim() === '') {
         return res.status(400).json({ error: 'Comment text is required' });
@@ -93,17 +76,19 @@ router.post('/:id/comments', async (req, res) => {
 
     try {
         const poll = await Poll.findById(pollId);
-
         if (!poll) {
             return res.status(404).json({ error: 'Poll not found' });
         }
-        poll.comments.push({ text, author });
 
+        poll.comments.push({ text, author: req.user.id }); // Usa el ID del usuario como autor
         await poll.save();
-        res.status(201).json({ message: 'Comment added successfully', poll });
 
-        }catch (err) { res.status(500).json({ error: err.message }) }
+        res.status(201).json({ message: 'Comment added successfully', poll });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
+
 
 // Get comments to a poll [still to implement]
 /*
@@ -134,7 +119,7 @@ router.get('/:id/comments', async (req, res) => {
 });
 */
 
-// Like a comment in a poll [Verified - Working!]
+// Like a comment in a poll [pending auth implementation]
 router.put('/:pollId/comments/:commentId/like', async (req, res) => {
     const { pollId, commentId } = req.params;
 
