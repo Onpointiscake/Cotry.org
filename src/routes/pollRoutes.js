@@ -40,7 +40,7 @@ router.post('/', authMiddleware, async (req, res) => {
     }
 });
 
-
+// Vote on a poll
 router.put('/:id/vote', authMiddleware, async (req, res) => {
     const pollId = req.params.id;
     const { option } = req.body;
@@ -66,6 +66,7 @@ router.put('/:id/vote', authMiddleware, async (req, res) => {
     }
 });
 
+// Post a comment in a poll 
 router.post('/:id/comments', authMiddleware, async (req, res) => {
     const pollId = req.params.id;
     const { text } = req.body;
@@ -84,6 +85,38 @@ router.post('/:id/comments', authMiddleware, async (req, res) => {
         await poll.save();
 
         res.status(201).json({ message: 'Comment added successfully', poll });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Like a comment in a poll
+router.put('/:pollId/comments/:commentId/like', authMiddleware, async (req, res) => {
+    const { pollId, commentId } = req.params;
+
+    try {
+        const poll = await Poll.findById(pollId);
+        if (!poll) {
+            return res.status(404).json({ error: 'Poll not found' });
+        }
+
+        const comment = poll.comments.id(commentId);
+        if (!comment) {
+            return res.status(404).json({ error: 'Comment not found' });
+        }
+
+        // Check if the user has already liked the comment
+        if (comment.likedBy.includes(req.user.id)) {
+            return res.status(400).json({ error: 'You have already liked this comment' });
+        }
+
+        // Add user ID to likedBy array and increment likes
+        comment.likedBy.push(req.user.id);
+        comment.likes += 1;
+
+        await poll.save();
+
+        res.status(200).json({ message: 'Comment liked successfully', comment });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -119,28 +152,7 @@ router.get('/:id/comments', async (req, res) => {
 });
 */
 
-// Like a comment in a poll [pending auth implementation]
-router.put('/:pollId/comments/:commentId/like', async (req, res) => {
-    const { pollId, commentId } = req.params;
 
-    try {
-        const poll = await Poll.findById(pollId);
-        if (!poll) {
-            return res.status(404).json({ error: 'Poll not found' });
-        }
-
-        const comment = poll.comments.id(commentId);
-        if (!comment) {
-            return res.status(404).json({ error: 'Comment not found' });
-        }
-
-        comment.likes += 1;
-        await poll.save();
-
-        res.status(200).json({ message: 'Comment liked successfully', comment });
-        
-        } catch (err) { res.status(500).json({ error: err.message }) }
-});
 
 // Delete a poll by ID [ only available from admin pending ]
 /*
